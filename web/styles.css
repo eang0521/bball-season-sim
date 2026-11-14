@@ -109,7 +109,9 @@ tbody tr:hover { background: #1a2140; }
 .award-card .award-name { font-size: 0.95rem; font-weight: 700; color: #fff; }
 .award-card .award-meta { font-size: 0.78rem; color: #94a3b8; margin-top: 0.1rem; }
 .award-card .award-stat-line { font-size: 0.8rem; color: #c5d0fc; font-weight: 600; margin-top: 0.5rem; }
-.team-list-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem; }
+/* All-NBA/-Defensive/-Rookie teams stack top to bottom (one tier per
+   row), not side by side, so each tier reads as a full-width list. */
+.team-list-grid { display: flex; flex-direction: column; gap: 0.9rem; margin-bottom: 1.25rem; }
 .team-list-grid ol { list-style: decimal inside; font-size: 0.82rem; color: #c5d0fc; display: flex; flex-direction: column; gap: 0.15rem; }
 
 /* Playoffs */

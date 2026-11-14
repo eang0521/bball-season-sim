@@ -33,7 +33,9 @@ export function createInjuryTracker() {
 
   // `events` is a game's simulateGame() result.injuryEvents; `idByName`
   // maps "team|name" -> player id, for the report the UI reads.
-  function recordEvents(events, idByName) {
+  // `gameNumByTeam` and `phase` describe which game this was for each
+  // side, matching season.html's Opponent / Phase (Game #) / Time columns.
+  function recordEvents(events, idByName, gameNumByTeam, phase) {
     for (const evt of events) {
       const key = `${evt.team}|${evt.name}`;
       playerInjuries.set(key, { gamesRemaining: evt.games, severity: evt.severity });
@@ -41,6 +43,11 @@ export function createInjuryTracker() {
         id: idByName.get(key),
         name: evt.name,
         team: evt.team,
+        opponent: evt.opponent,
+        phase,
+        gameNum: gameNumByTeam[evt.team],
+        quarter: evt.quarter,
+        clockFmt: evt.clockFmt,
         label: evt.severity,
         outGames: evt.games,
       });

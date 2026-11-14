@@ -54,6 +54,22 @@ test('injuries follow nba-game-sim\'s real severity distribution (ported from se
   assert.ok(sawZeroGames, 'at least one Light injury should round down to 0 games missed');
 });
 
+test('injury report carries opponent/phase/game#/time, like season.html\'s log', () => {
+  const rng = createRng(17);
+  const league = generateInitialLeague(defaultRules, rng);
+  const { injuryReport } = playSeason(league, rng, { gamesPerTeam: 20, injuriesEnabled: true });
+
+  assert.ok(injuryReport.length > 0);
+  const teamAbbrs = new Set(league.teams.map((t) => t.abbr));
+  for (const r of injuryReport) {
+    assert.ok(teamAbbrs.has(r.opponent) && r.opponent !== r.team, 'opponent should be a different real team');
+    assert.equal(r.phase, 'Regular Season');
+    assert.ok(r.gameNum >= 1 && r.gameNum <= 20, `gameNum ${r.gameNum} should be within the season`);
+    assert.ok(r.quarter >= 1 && r.quarter <= 4, 'injuries only roll in regulation quarters');
+    assert.match(r.clockFmt, /^\d{2}:\d{2}$/);
+  }
+});
+
 test('playSeason respects a custom gamesPerTeam and tracks per-player stats', () => {
   const rng = createRng(11);
   const league = generateInitialLeague(defaultRules, rng);

@@ -376,17 +376,16 @@ function renderInjuries(report) {
   }
   placeholder.hidden = true;
   table.hidden = false;
-  document.getElementById('injuriesBody').innerHTML = report
-    .map((r) => {
-      // outGames is the injury's full assigned length; gamesRemaining is
-      // however much of that was still left when the season ended — a
-      // "Severe" injury can still show 0 remaining if it happened early
-      // enough in a long season to fully heal before the season was over.
-      const status = r.gamesRemaining > 0
-        ? `Out ${r.gamesRemaining} more game${r.gamesRemaining === 1 ? '' : 's'}`
-        : 'Returned';
-      return `<tr><td>${r.name}</td><td>${r.team}</td><td>${r.label}</td><td>${r.outGames}</td><td>${status}</td></tr>`;
-    })
+  // Same columns and newest-first order as nba-game-sim's injury log.
+  document.getElementById('injuriesBody').innerHTML = [...report]
+    .reverse()
+    .map(
+      (r) => `<tr>
+        <td>${r.name}</td><td>${r.team}</td><td>vs ${r.opponent}</td>
+        <td>${r.phase} (G${r.gameNum})</td><td>Q${r.quarter} ${r.clockFmt}</td>
+        <td>${r.outGames}</td>
+      </tr>`,
+    )
     .join('');
 }
 

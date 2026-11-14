@@ -86,7 +86,11 @@ export function playSeason(league, rng, settings = {}, onGame) {
     addGameBoxScore(stats, result.boxScore[aAbbr], aAbbr);
     addGameBoxScore(stats, result.boxScore[bAbbr], bAbbr);
     if (injuries && result.injuryEvents.length) {
-      injuries.recordEvents(result.injuryEvents, nameToId);
+      const gameNumByTeam = {
+        [aAbbr]: gamesPlayed.get(aAbbr) + 1,
+        [bAbbr]: gamesPlayed.get(bAbbr) + 1,
+      };
+      injuries.recordEvents(result.injuryEvents, nameToId, gameNumByTeam, 'Regular Season');
     }
 
     gamesPlayed.set(aAbbr, gamesPlayed.get(aAbbr) + 1);

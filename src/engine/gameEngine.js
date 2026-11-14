@@ -266,6 +266,7 @@ export class Game {
 
   applyInjury(inj) {
     const team = inj.team === 't1' ? this.t1 : this.t2;
+    const opp = team === this.t1 ? this.t2 : this.t1;
     if (!team.court.length) return;
     const player = team.court[Math.floor(Math.random() * team.court.length)];
     player.injured = true;
@@ -275,7 +276,10 @@ export class Game {
       : severity === 'Medium' ? 10 + randNormal(10)
       : 2 + randNormal(5);
     const games = Math.max(0, Math.round(raw));
-    this.injuryEvents.push({ name: player.name, team: team.abbr, severity, games });
+    this.injuryEvents.push({
+      name: player.name, team: team.abbr, opponent: opp.abbr, severity, games,
+      quarter: this.quarter, clockFmt: this.fmt(),
+    });
     this.log(`${player.name} is injured${severity === 'Severe' ? ' (SEVERE)' : ''} — out an estimated ${games} game${games === 1 ? '' : 's'}`);
     this.subs(null, [player]);
   }
