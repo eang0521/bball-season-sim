@@ -10,6 +10,7 @@ import { runPostseason } from '../src/season/playoffs.js';
 import { computeAwards, computeFinalsMvp } from '../src/season/awards.js';
 import { splitByConference } from '../src/season/conferences.js';
 import { statSummary } from '../src/season/stats.js';
+import { withPositions } from '../src/season/positions.js';
 
 const BOOTSTRAP_SEASONS = 10;
 const LEADER_CATEGORIES = [
@@ -24,11 +25,15 @@ let league = null;
 let season = 0;
 let rookieIds = new Set();
 
+// league.players is kept position-annotated at all times (see every
+// place `league =` is assigned below), so this just passes it through —
+// including when called with a single team's slice, which couldn't
+// rank itself league-wide on its own.
 function rosterSummary(players) {
   return [...players]
     .sort((a, b) => b.overall - a.overall)
     .map((p) => ({
-      id: p.id, name: p.name, team: p.team, age: p.age,
+      id: p.id, name: p.name, team: p.team, age: p.age, position: p.position,
       overall: p.overall, potential: p.potential, ratings: p.ratings,
       salary: p.salary, yearsLeft: p.yearsLeft,
     }));
@@ -75,7 +80,8 @@ self.onmessage = (event) => {
     rookieIds = new Set();
 
     if (payload?.mode === 'real') {
-      league = generateRealLeague(defaultRules, rng);
+      const real = generateRealLeague(defaultRules, rng);
+      league = { teams: real.teams, players: withPositions(real.players) };
       postReady();
       return;
     }
@@ -85,7 +91,7 @@ self.onmessage = (event) => {
     const matured = fastForwardSeasons(rookieLeague, defaultRules, rng, BOOTSTRAP_SEASONS, (done, total) => {
       self.postMessage({ type: 'bootstrapProgress', season: done, total });
     });
-    league = { teams: matured.teams, players: matured.players };
+    league = { teams: matured.teams, players: withPositions(matured.players) };
     rookieIds = new Set(matured.lastDraftees.map((p) => p.id));
     postReady();
     return;
@@ -113,7 +119,7 @@ self.onmessage = (event) => {
 
     league = { teams: standings, players: league.players };
     const { players, retirees, draftees } = runOffseason(league, defaultRules, rng);
-    league = { teams: standings, players };
+    league = { teams: standings, players: withPositions(players) };
     rookieIds = new Set(draftees.map((p) => p.id));
     season += 1;
 

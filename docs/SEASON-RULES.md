@@ -14,6 +14,12 @@ Every player carries:
 - **Potential** — a ceiling Overall is chasing. Potential is not fixed: it
   drifts on its own, and erodes with age.
 - **Age**, **salary**, **yearsLeft** (on contract), **yearsWithTeam**.
+- **Position** — not stored on the player, but derived fresh any time a
+  roster is displayed: rank all 450 league players by "size" (same `PV`
+  formula nba-game-sim's `teams.html` uses to sort a 15-man roster into
+  on-court positions: mostly `reb - threePt`, tiebroken by `twoPt` then
+  `def`), then split that ranking into 9 equal bands of 50, smallest to
+  largest — PG, G, SG, GF, SF, F, PF, FC, C. See `src/season/positions.js`.
 
 ## The offseason, step by step
 

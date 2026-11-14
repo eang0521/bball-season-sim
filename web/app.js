@@ -367,8 +367,11 @@ function mergePlayers(snapshot) {
   return snapshot.playedRoster.map((p) => ({ ...p, ...(statsById.get(p.id) ?? empty) }));
 }
 
+const POSITION_ORDER = ['PG', 'G', 'SG', 'GF', 'SF', 'F', 'PF', 'FC', 'C'];
+
 function getSortValue(row, key) {
   if (key === 'twoPt' || key === 'threePt' || key === 'def' || key === 'reb') return row.ratings[key];
+  if (key === 'position') return POSITION_ORDER.indexOf(row.position);
   return row[key];
 }
 
@@ -382,7 +385,7 @@ function renderPlayersTable(rows) {
   document.getElementById('playersBody').innerHTML = sorted
     .map(
       (p) => `<tr>
-        <td>${p.name}</td><td>${p.team}</td><td>${p.age}</td>
+        <td>${p.name}</td><td>${p.team}</td><td>${p.position ?? '—'}</td><td>${p.age}</td>
         <td>${p.ratings.twoPt}</td><td>${p.ratings.threePt}</td><td>${p.ratings.def}</td><td>${p.ratings.reb}</td>
         <td>${p.overall}</td><td>${p.potential}</td>
         <td>${p.salary}</td><td>${p.yearsLeft}</td>
@@ -426,7 +429,7 @@ function renderRoster(team) {
   rosterBody.innerHTML = players
     .map(
       (p) => `<tr>
-        <td>${p.name}</td><td>${p.age}</td>
+        <td>${p.name}</td><td>${p.position ?? '—'}</td><td>${p.age}</td>
         <td>${p.ratings.twoPt}</td><td>${p.ratings.threePt}</td>
         <td>${p.ratings.def}</td><td>${p.ratings.reb}</td>
         <td>${p.overall}</td><td>${p.potential}</td>
