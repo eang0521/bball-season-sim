@@ -43,7 +43,7 @@ export function createInjuryTracker() {
       const outGames = randInt(rng, severity.gamesRange[0], severity.gamesRange[1]);
       const outUntil = gamesPlayed + outGames;
       until.set(victim.id, outUntil);
-      report.push({ id: victim.id, name: victim.name, team, label: severity.label, outUntil });
+      report.push({ id: victim.id, name: victim.name, team, label: severity.label, outGames, outUntil });
     }
   }
 

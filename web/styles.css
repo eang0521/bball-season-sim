@@ -68,9 +68,18 @@ tbody tr:hover { background: #1a2140; }
 .summary h4 { font-size: 0.8rem; color: #e2e8f0; margin: 0.6rem 0 0.3rem; }
 .summary ul { list-style: none; font-size: 0.82rem; color: #c5d0fc; display: flex; flex-direction: column; gap: 0.2rem; }
 
-.history { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.85rem; }
-.history li { display: flex; justify-content: space-between; border-bottom: 1px solid #1f2742; padding: 0.3rem 0; }
+.history { list-style: none; display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; }
+.history li {
+  display: flex; justify-content: space-between; border-bottom: 1px solid #1f2742;
+  padding: 0.35rem 0.4rem; cursor: pointer; border-radius: 5px; transition: background 0.15s;
+}
+.history li:hover { background: #1a2140; }
+.history li.viewing { background: #1e2d5a; }
 .history .champ { color: #ffd43b; font-weight: 700; }
+
+/* Season navigator */
+.season-nav { padding: 0.75rem 1.4rem; }
+.season-nav .status { color: #e2e8f0; font-weight: 700; font-size: 0.9rem; min-width: 8rem; text-align: center; }
 
 /* Tabs */
 .tabs { display: flex; gap: 0.3rem; flex-wrap: wrap; border-bottom: 1px solid #232a44; padding-bottom: 0; }
@@ -121,6 +130,14 @@ tbody tr:hover { background: #1a2140; }
 }
 .champion-banner .title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #c5d0fc; }
 .champion-banner .name { font-size: 1.4rem; font-weight: 800; color: #fff; margin-top: 0.2rem; }
+
+/* Players table */
+.table-scroll { overflow-x: auto; }
+table.sortable th { cursor: pointer; white-space: nowrap; user-select: none; }
+table.sortable th:hover { color: #c5d0fc; }
+table.sortable th.sorted::after { content: ' \25BC'; color: #748ffc; font-size: 0.65rem; }
+table.sortable th.sorted.asc::after { content: ' \25B2'; }
+table.sortable td { white-space: nowrap; }
 
 /* Settings */
 .setting-card { background: #0f1117; border: 1px solid #232a44; border-radius: 8px; margin-bottom: 0.75rem; overflow: hidden; }

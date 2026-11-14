@@ -40,12 +40,22 @@
       </p>
     </section>
 
+    <section class="panel season-nav" id="seasonNav" hidden>
+      <div class="control-row">
+        <button id="prevSeasonBtn" class="btn" aria-label="Previous season">&larr;</button>
+        <span id="seasonNavLabel" class="status"></span>
+        <button id="nextSeasonBtn" class="btn" aria-label="Next season">&rarr;</button>
+        <button id="latestSeasonBtn" class="btn primary" hidden>Jump to Latest</button>
+      </div>
+    </section>
+
     <nav class="tabs" id="tabs">
       <button class="tab active" data-tab="standings">Standings</button>
       <button class="tab" data-tab="leaders">Leaders</button>
       <button class="tab" data-tab="awards">Awards</button>
       <button class="tab" data-tab="playoffs">Playoffs</button>
       <button class="tab" data-tab="injuries">Injuries</button>
+      <button class="tab" data-tab="players">Players</button>
       <button class="tab" data-tab="roster">Roster</button>
       <button class="tab" data-tab="settings">Settings</button>
     </nav>
@@ -106,9 +116,34 @@
       <h2>Injury Report</h2>
       <p class="placeholder" id="injuriesPlaceholder">Enable Injuries in Settings and simulate a season to see this.</p>
       <table class="standings" id="injuriesTable" hidden>
-        <thead><tr><th>Player</th><th>Team</th><th>Severity</th><th>Games Remaining</th></tr></thead>
+        <thead><tr><th>Player</th><th>Team</th><th>Severity</th><th>Games Missed</th><th>Status (end of season)</th></tr></thead>
         <tbody id="injuriesBody"></tbody>
       </table>
+    </section>
+
+    <!-- ── Players ────────────────────────────────────────────── -->
+    <section class="panel tab-panel" id="tab-players">
+      <h2>League Players</h2>
+      <p class="placeholder" id="playersPlaceholder">Simulate a season to see every player's ratings and stat line here.</p>
+      <div id="playersContent" hidden>
+        <p class="hint" style="margin-top:0">Click a column header to sort. Ratings/stats are as of the season shown above.</p>
+        <div class="table-scroll">
+          <table class="standings sortable" id="playersTable">
+            <thead>
+              <tr>
+                <th data-key="name">Player</th><th data-key="team">Team</th><th data-key="age">Age</th>
+                <th data-key="twoPt">2PT</th><th data-key="threePt">3PT</th><th data-key="def">DEF</th><th data-key="reb">REB</th>
+                <th data-key="overall">OVR</th><th data-key="potential">POT</th>
+                <th data-key="salary">$</th><th data-key="yearsLeft">Yrs</th>
+                <th data-key="games">GP</th><th data-key="ppg">PPG</th><th data-key="rpg">RPG</th><th data-key="apg">APG</th>
+                <th data-key="spg">SPG</th><th data-key="bpg">BPG</th><th data-key="pmpg">+/-</th>
+                <th data-key="fgPct">FG%</th><th data-key="tpPct">3P%</th>
+              </tr>
+            </thead>
+            <tbody id="playersBody"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- ── Roster ─────────────────────────────────────────────── -->

@@ -24,6 +24,21 @@ test('buildSchedule gives every team exactly gamesPerTeam games for odd and even
   }
 });
 
+test('injuries always have a real, non-zero assigned duration', () => {
+  const rng = createRng(42);
+  const league = generateInitialLeague(defaultRules, rng);
+  const { injuryReport } = playSeason(league, rng, { gamesPerTeam: 82, injuriesEnabled: true });
+
+  assert.ok(injuryReport.length > 0, 'an 82-game season with injuries enabled should produce some');
+  for (const r of injuryReport) {
+    assert.ok(r.outGames >= 1, `${r.label} injury should never be assigned 0 games out`);
+    // gamesRemaining (how much of the injury was still active when the
+    // season ended) can legitimately be 0 even for a long injury, if it
+    // happened early enough to fully heal before the season was over.
+    assert.ok(r.gamesRemaining >= 0 && r.gamesRemaining <= r.outGames);
+  }
+});
+
 test('playSeason respects a custom gamesPerTeam and tracks per-player stats', () => {
   const rng = createRng(11);
   const league = generateInitialLeague(defaultRules, rng);

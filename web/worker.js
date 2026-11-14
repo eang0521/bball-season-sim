@@ -106,6 +106,10 @@ self.onmessage = (event) => {
     const finalsMvp = computeFinalsMvp(postseason.finals, league.players);
     const awards = computeAwards(stats, standings, league.players, rookieIds, settings.gamesPerTeam);
     const leaders = buildLeaders(stats, settings.gamesPerTeam);
+    const allPlayerStats = stats.map(statSummary);
+    // The roster as it actually played this season (ratings before the
+    // offseason ages/replaces anyone), for the Players tab and history.
+    const playedRoster = rosterSummary(league.players);
 
     league = { teams: standings, players: league.players };
     const { players, retirees, draftees } = runOffseason(league, defaultRules, rng);
@@ -129,6 +133,8 @@ self.onmessage = (event) => {
       retireeCount: retirees.length,
       draftedCount: draftees.length,
       roster: rosterSummary(league.players),
+      playedRoster,
+      allPlayerStats,
     });
     return;
   }
