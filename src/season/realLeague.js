@@ -7,6 +7,9 @@ import { playerAges } from '../../data/playerAges.js';
 import { randInt, signedDie } from './rng.js';
 import { renewContract } from './contracts.js';
 
+// playerAges.js covers every player currently in nbaRosters.js (computed
+// as of Feb 1, 2027), so this fallback only matters if nbaRosters.js is
+// ever updated with someone not yet researched into playerAges.js.
 const FALLBACK_AGE_MIN = 20;
 const FALLBACK_AGE_MAX = 32;
 

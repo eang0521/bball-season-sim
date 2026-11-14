@@ -29,9 +29,17 @@ draft) that carries a league from one year into the next.
     and Finals MVP from the season's accumulated stats. (A heuristic
     approximation — nba-game-sim's own awards logic wasn't available to
     port from.)
-  - `conferences.js`, `injuries.js`, `league.js`, `realLeague.js` — East/West
-    alignment, a lightweight injury model, and the two league-generation
-    paths described below.
+  - `conferences.js`, `league.js`, `realLeague.js` — East/West alignment
+    and the two league-generation paths described below.
+  - Injuries are rolled by the engine itself (`gameEngine.js`'s
+    `rollInjuries`/`checkInjuries`/`applyInjury`), ported verbatim from
+    nba-game-sim's `season.html`: each game has roughly even odds of
+    seeing an injury (continues at a 1/3 chance per extra one), severity
+    is 95% Light / 4.5% Medium / 0.5% Severe, and games missed is a
+    rounded Normal(mean, stdev) draw per severity (2±5 / 10±10 / 50±15) —
+    so a "Light" injury can legitimately round down to 0 games missed.
+    `injuries.js` is just the season-level bookkeeping (who's still out,
+    decremented per game) around that.
 - `index.html` / `web/` — a static, client-side site: a Web Worker runs the
   season sim off the main thread so simulating a full season plus
   postseason doesn't freeze the page. Tabs for Standings, Leaders, Awards,
@@ -48,9 +56,11 @@ draft) that carries a league from one year into the next.
   common names come up more often than rare ones — same idea as the source
   spreadsheet's name generator.
 - **Real NBA rosters** — builds the league from `nba-game-sim`'s current
-  roster data (`data/nbaRosters.js`) and a real age cache
-  (`data/playerAges.js`) where a player's age is known; Potential and
-  contracts are estimated, since neither exists in the source data.
+  roster data (`data/nbaRosters.js`) and every one of those 450 players'
+  real birthdate (`data/playerAges.js`), with age computed as of February
+  1, 2027 — the project's fixed reference date for the 2026-27 season.
+  Potential and contracts are estimated, since neither exists in the
+  source data.
 
 ## Running it
 
@@ -87,8 +97,6 @@ no-retirement franchise mode — is just a different config object.
 
 - Awards are a reasonable heuristic, not a port of nba-game-sim's own
   awards voting (that source wasn't available to read).
-- The injuries model is a lightweight approximation of nba-game-sim's
-  settings page description, not a port of its actual implementation.
 - No individual game box score/play-by-play viewer yet, though the engine
   already returns that data (`simulateGame`'s `boxScore`, and `timeline`
   when `includeTimeline: true`).

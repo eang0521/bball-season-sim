@@ -4,6 +4,7 @@ import { createRng } from '../src/season/rng.js';
 import { defaultRules } from '../src/season/config.js';
 import { generateInitialLeague, fastForwardSeasons } from '../src/season/league.js';
 import { generateRealLeague } from '../src/season/realLeague.js';
+import { playerAges } from '../data/playerAges.js';
 
 test('fast-forwarding a rookie-only league keeps its size and ages the roster', () => {
   const rng = createRng(5);
@@ -46,5 +47,16 @@ test('real-roster league has 30 teams of 15 real players with usable stats', () 
       player.ratings.twoPt + player.ratings.threePt + player.ratings.def + player.ratings.reb,
     );
     assert.ok(player.yearsLeft >= 1);
+  }
+});
+
+test('real-roster league ages come from researched birthdates, not the fallback range', () => {
+  const rng = createRng(2);
+  const league = generateRealLeague(defaultRules, rng);
+
+  for (const player of league.players) {
+    const real = playerAges[player.name];
+    assert.ok(real, `${player.name} should have a researched birthdate`);
+    assert.equal(player.age, real.age, `${player.name}'s age should match playerAges.js exactly`);
   }
 });

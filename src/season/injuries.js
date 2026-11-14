@@ -1,51 +1,70 @@
-// A lightweight injury model (not nba-game-sim's own system — that wasn't
-// available to port — but the same shape: each game carries a small
-// chance of an injury, re-rolled for multiples, and injured players sit
-// out a random stretch of future games before returning).
-import { randInt } from './rng.js';
-
-const PER_GAME_CHANCE = 0.2;
-const SEVERITY = [
-  { label: 'Minor', weight: 3, gamesRange: [1, 5] },
-  { label: 'Moderate', weight: 2, gamesRange: [6, 15] },
-  { label: 'Severe', weight: 1, gamesRange: [16, 40] },
-];
-const TOTAL_WEIGHT = SEVERITY.reduce((sum, s) => sum + s.weight, 0);
-
-function rollSeverity(rng) {
-  let roll = rng() * TOTAL_WEIGHT;
-  for (const s of SEVERITY) {
-    if (roll < s.weight) return s;
-    roll -= s.weight;
-  }
-  return SEVERITY[0];
-}
-
-// Creates an injury tracker: `.available(team, gamesPlayed, roster)` filters
-// out anyone currently hurt; `.maybeInjure(team, gamesPlayed, roster, rng)`
-// rolls the per-game chance (re-rolled for multiples) and may sideline a
-// random healthy player, recording it in `.report`.
+// Season-level bookkeeping around the engine's own injury rolls (see
+// rollInjuries/checkInjuries/applyInjury in ../engine/gameEngine.js,
+// ported from nba-game-sim's season.html). The engine decides WHO gets
+// hurt, how badly, and for how long during a given game; this just
+// tracks who's still out afterward, mirroring season.html's
+// isAvailable()/decrementInjuries() exactly.
 export function createInjuryTracker() {
-  const until = new Map(); // playerId -> gamesPlayed threshold to return at
-  const report = []; // { id, name, team, label, outUntil }
+  const playerInjuries = new Map(); // "team|name" -> { gamesRemaining, severity }
+  const report = []; // { id, name, team, label, outGames }
 
-  function available(team, gamesPlayed, roster) {
-    const healthy = roster.filter((p) => (until.get(p.id) ?? 0) <= gamesPlayed);
+  function isAvailable(p) {
+    const inj = playerInjuries.get(`${p.team}|${p.name}`);
+    return !inj || inj.gamesRemaining <= 0;
+  }
+
+  // Same shape as season.html's roster filtering, plus a safety net it
+  // doesn't need: if injuries have genuinely dropped a team below 5
+  // available, field the full roster rather than crash short-handed.
+  function filterAvailable(roster) {
+    const healthy = roster.filter(isAvailable);
     return healthy.length >= 5 ? healthy : roster;
   }
 
-  function maybeInjure(team, gamesPlayed, roster, rng) {
-    while (rng() < PER_GAME_CHANCE) {
-      const healthy = available(team, gamesPlayed, roster);
-      if (healthy.length <= 5) break;
-      const victim = healthy[randInt(rng, 0, healthy.length - 1)];
-      const severity = rollSeverity(rng);
-      const outGames = randInt(rng, severity.gamesRange[0], severity.gamesRange[1]);
-      const outUntil = gamesPlayed + outGames;
-      until.set(victim.id, outUntil);
-      report.push({ id: victim.id, name: victim.name, team, label: severity.label, outGames, outUntil });
+  function decrement(roster) {
+    for (const p of roster) {
+      const key = `${p.team}|${p.name}`;
+      const inj = playerInjuries.get(key);
+      if (!inj) continue;
+      inj.gamesRemaining -= 1;
+      if (inj.gamesRemaining <= 0) playerInjuries.delete(key);
     }
   }
 
-  return { available, maybeInjure, report };
+  // `events` is a game's simulateGame() result.injuryEvents; `idByName`
+  // maps "team|name" -> player id, for the report the UI reads.
+  function recordEvents(events, idByName) {
+    for (const evt of events) {
+      const key = `${evt.team}|${evt.name}`;
+      playerInjuries.set(key, { gamesRemaining: evt.games, severity: evt.severity });
+      report.push({
+        id: idByName.get(key),
+        name: evt.name,
+        team: evt.team,
+        label: evt.severity,
+        outGames: evt.games,
+      });
+    }
+  }
+
+  // Call once, after the season's last game, to attach each report
+  // entry's final "still out" count. A player can be injured more than
+  // once in a season (fully healing in between — a new injury can't be
+  // assigned while an old one is still active), so the live map state
+  // belongs only to each player's most recent entry; earlier ones are
+  // already fully resolved by construction.
+  function finalize() {
+    const seenKey = new Set();
+    const result = new Array(report.length);
+    for (let i = report.length - 1; i >= 0; i--) {
+      const r = report[i];
+      const key = `${r.team}|${r.name}`;
+      const isLatest = !seenKey.has(key);
+      seenKey.add(key);
+      result[i] = { ...r, gamesRemaining: isLatest ? (playerInjuries.get(key)?.gamesRemaining ?? 0) : 0 };
+    }
+    return result;
+  }
+
+  return { filterAvailable, decrement, recordEvents, finalize };
 }

@@ -21,22 +21,33 @@ function groupByTeam(players) {
   return byTeam;
 }
 
+// Matches nba-game-sim's perturbRosters(): independent Normal(0, stdev)
+// noise per rating, clamped at 0.
 function jitterRoster(players, stdev, rng) {
   if (!stdev) return players;
   return players.map((p) => ({
     ...p,
     ratings: {
-      twoPt: p.ratings.twoPt + Math.round(gaussian(rng, stdev)),
-      threePt: p.ratings.threePt + Math.round(gaussian(rng, stdev)),
-      def: p.ratings.def + Math.round(gaussian(rng, stdev)),
-      reb: p.ratings.reb + Math.round(gaussian(rng, stdev)),
+      twoPt: Math.max(0, p.ratings.twoPt + Math.round(gaussian(rng, stdev))),
+      threePt: Math.max(0, p.ratings.threePt + Math.round(gaussian(rng, stdev))),
+      def: Math.max(0, p.ratings.def + Math.round(gaussian(rng, stdev))),
+      reb: Math.max(0, p.ratings.reb + Math.round(gaussian(rng, stdev))),
     },
   }));
+}
+
+function idByTeamName(players) {
+  return new Map(players.map((p) => [`${p.team}|${p.name}`, p.id]));
 }
 
 // Plays a full schedule (see buildSchedule) and accumulates season-long
 // per-player stat lines from every game's box score. `onGame(played,
 // total)` fires after each simulated game, for progress reporting.
+//
+// Injuries follow nba-game-sim's season.html simGame() exactly: for each
+// game, filter each side to available players, decrement existing
+// injuries for the full roster, THEN play the game — any new injuries
+// the engine rolls during it apply starting next game.
 export function playSeason(league, rng, settings = {}, onGame) {
   const cfg = { ...DEFAULT_SEASON_SETTINGS, ...settings };
   const rosterByTeam = groupByTeam(league.players);
@@ -52,32 +63,34 @@ export function playSeason(league, rng, settings = {}, onGame) {
   const schedule = buildSchedule(abbrs, cfg.gamesPerTeam, rng);
   const stats = createStatAccumulator(league.players);
   const injuries = cfg.injuriesEnabled ? createInjuryTracker() : null;
+  const nameToId = cfg.injuriesEnabled ? idByTeamName(league.players) : null;
 
   let played = 0;
   for (const [aAbbr, bAbbr] of schedule) {
-    let rosterA = rosterByTeam.get(aAbbr);
-    let rosterB = rosterByTeam.get(bAbbr);
+    const fullA = rosterByTeam.get(aAbbr);
+    const fullB = rosterByTeam.get(bAbbr);
+    const rosterA = injuries ? injuries.filterAvailable(fullA) : fullA;
+    const rosterB = injuries ? injuries.filterAvailable(fullB) : fullB;
     if (injuries) {
-      rosterA = injuries.available(aAbbr, gamesPlayed.get(aAbbr), rosterA);
-      rosterB = injuries.available(bAbbr, gamesPlayed.get(bAbbr), rosterB);
+      injuries.decrement(fullA);
+      injuries.decrement(fullB);
     }
 
     const result = simulateGame(
       { abbr: aAbbr, players: rosterA },
       { abbr: bAbbr, players: rosterB },
       rng,
-      { homeCourtAdvantage: cfg.homeCourtAdvantage },
+      { homeCourtAdvantage: cfg.homeCourtAdvantage, injuriesEnabled: cfg.injuriesEnabled },
     );
     wins.set(result.winner, wins.get(result.winner) + 1);
     addGameBoxScore(stats, result.boxScore[aAbbr], aAbbr);
     addGameBoxScore(stats, result.boxScore[bAbbr], bAbbr);
+    if (injuries && result.injuryEvents.length) {
+      injuries.recordEvents(result.injuryEvents, nameToId);
+    }
 
     gamesPlayed.set(aAbbr, gamesPlayed.get(aAbbr) + 1);
     gamesPlayed.set(bAbbr, gamesPlayed.get(bAbbr) + 1);
-    if (injuries) {
-      injuries.maybeInjure(aAbbr, gamesPlayed.get(aAbbr), rosterByTeam.get(aAbbr), rng);
-      injuries.maybeInjure(bAbbr, gamesPlayed.get(bAbbr), rosterByTeam.get(bAbbr), rng);
-    }
 
     played += 1;
     onGame?.(played, schedule.length);
@@ -90,12 +103,5 @@ export function playSeason(league, rng, settings = {}, onGame) {
     gamesPlayed: gamesPlayed.get(t.abbr),
   }));
 
-  const injuryReport = injuries
-    ? injuries.report.map((r) => ({
-        ...r,
-        gamesRemaining: Math.max(0, r.outUntil - gamesPlayed.get(r.team)),
-      }))
-    : [];
-
-  return { standings, stats: [...stats.values()], injuryReport };
+  return { standings, stats: [...stats.values()], injuryReport: injuries ? injuries.finalize() : [] };
 }

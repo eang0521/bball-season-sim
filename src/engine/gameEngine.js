@@ -13,6 +13,12 @@ function rollD(sides, num = 1) {
   return t;
 }
 
+// Box-Muller, matching nba-game-sim's season.html randNormal(std) exactly.
+function randNormal(std) {
+  const u1 = Math.random(), u2 = Math.random();
+  return std * Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
 export class Player {
   constructor(name, t_2pt, t_3pt, t_def, t_reb) {
     this.name = name;
@@ -31,6 +37,7 @@ export class Player {
     this.fouls = 0; this.plus_minus = 0;
     this.on_court = false;
     this.fouled_out = false;
+    this.injured = false;
     this.positions_played = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
     this.current_position = null;
     this.team_ref = null;
@@ -76,7 +83,7 @@ export function applyHomeBonus(team) {
 }
 
 export class Game {
-  constructor(t1, t2) {
+  constructor(t1, t2, injuriesEnabled = false) {
     this.t1 = t1; this.t2 = t2;
     this.quarter = 0; this.clock = 0;
     this.possession = null; this.jumpball_winner = null;
@@ -85,6 +92,9 @@ export class Game {
     this.t1_last = 0; this.t2_last = 0;
     this.logs = {};
     this.timeline = [];
+    this.injuriesEnabled = injuriesEnabled;
+    this.pendingInjuries = [];
+    this.injuryEvents = [];
   }
 
   fmt() {
@@ -136,11 +146,12 @@ export class Game {
       team.players.forEach((p) => { p.on_court = false; });
       for (let s = 0; s < 5; s++) {
         let bench = [...team.players]
-          .filter((p) => !p.on_court && !p.fouled_out)
+          .filter((p) => !p.on_court && !p.fouled_out && !p.injured)
           .sort((a, b) => b.ovr - a.ovr);
-        // A team can't take the court with fewer than 5 — if fouls have
-        // exhausted everyone else (rare, but reachable over enough
-        // simulated games), the least-disqualified player has to play on.
+        // A team can't take the court with fewer than 5 — if fouls (or an
+        // in-game injury) have exhausted everyone else (rare, but
+        // reachable over enough simulated games), the least-disqualified
+        // player has to play on.
         if (!bench.length) {
           bench = [...team.players]
             .filter((p) => !p.on_court)
@@ -177,7 +188,7 @@ export class Game {
         : Math.min(5, this.thresh(rollD(20), 5) + 1);
       n = Math.max(n, forcedTeam.length);
       const courtPool = [...team.court].sort((a, b) => a.ovr - b.ovr);
-      const initBench = team.players.filter((p) => !p.on_court && !p.fouled_out);
+      const initBench = team.players.filter((p) => !p.on_court && !p.fouled_out && !p.injured);
       const maxSubs = Math.min(n, courtPool.length, initBench.length);
       const outList = [], inList = [];
       for (let i = 0; i < maxSubs; i++) {
@@ -190,7 +201,7 @@ export class Game {
           outP = validOut[this.thresh(rollD(20), validOut.length)];
         }
         const validIn = [...team.players]
-          .filter((p) => !p.on_court && !p.fouled_out && !inList.includes(p))
+          .filter((p) => !p.on_court && !p.fouled_out && !p.injured && !inList.includes(p))
           .sort((a, b) => b.ovr - a.ovr).slice(0, 5);
         if (!validIn.length) break;
         let idxIn = this.thresh(rollD(20), 5);
@@ -226,6 +237,47 @@ export class Game {
   bonus(defTeam) {
     return defTeam.defensive_fouls_qtr >= 4
       || (this.clock <= 120 && defTeam.foul_in_last_2_mins);
+  }
+
+  // Ported verbatim from nba-game-sim's season.html: queues however many
+  // injuries will occur somewhere in this game's 4 regulation quarters
+  // (OT is exempt), each at a random team/quarter/clock-time, decided
+  // before a single possession is played.
+  rollInjuries() {
+    if (!this.injuriesEnabled) return;
+    while (rollD(6) <= 2) {
+      this.pendingInjuries.push({
+        quarter: rollD(4),
+        clock: Math.floor(Math.random() * 720),
+        team: rollD(2) === 1 ? 't1' : 't2',
+        applied: false,
+      });
+    }
+  }
+
+  checkInjuries() {
+    if (!this.pendingInjuries.length) return;
+    for (const inj of this.pendingInjuries) {
+      if (inj.applied || inj.quarter !== this.quarter || this.clock > inj.clock) continue;
+      inj.applied = true;
+      this.applyInjury(inj);
+    }
+  }
+
+  applyInjury(inj) {
+    const team = inj.team === 't1' ? this.t1 : this.t2;
+    if (!team.court.length) return;
+    const player = team.court[Math.floor(Math.random() * team.court.length)];
+    player.injured = true;
+    const roll = rollD(1000);
+    const severity = roll <= 5 ? 'Severe' : roll <= 50 ? 'Medium' : 'Light';
+    const raw = severity === 'Severe' ? 50 + randNormal(15)
+      : severity === 'Medium' ? 10 + randNormal(10)
+      : 2 + randNormal(5);
+    const games = Math.max(0, Math.round(raw));
+    this.injuryEvents.push({ name: player.name, team: team.abbr, severity, games });
+    this.log(`${player.name} is injured${severity === 'Severe' ? ' (SEVERE)' : ''} — out an estimated ${games} game${games === 1 ? '' : 's'}`);
+    this.subs(null, [player]);
   }
 
   foulOn(player) {
@@ -301,7 +353,9 @@ export class Game {
 
   poss(dice = 4) {
     if (this.clock <= 0) return;
-    if (!this.tick(dice)) return;
+    const going = this.tick(dice);
+    this.checkInjuries();
+    if (!going) return;
     const off = this.possession;
     const def = off === this.t1 ? this.t2 : this.t1;
     off.court.forEach((p) => { p.team_ref = off; });
@@ -452,6 +506,7 @@ export class Game {
   }
 
   run() {
+    this.rollInjuries();
     for (let q = 1; q <= 4; q++) { this.quarter = q; this.playQuarter(12); }
     let ot = 1;
     while (this.t1.score === this.t2.score) {
@@ -481,14 +536,14 @@ export function simulateGame(
   teamA,
   teamB,
   rng,
-  { includeTimeline = false, homeCourtAdvantage = true, forceHome = null } = {},
+  { includeTimeline = false, homeCourtAdvantage = true, forceHome = null, injuriesEnabled = false } = {},
 ) {
   const aIsHome = forceHome ? forceHome === 'A' : rng ? rng() < 0.5 : Math.random() < 0.5;
   const t1 = new Team(teamA.abbr, toEngineRoster(teamA.players));
   const t2 = new Team(teamB.abbr, toEngineRoster(teamB.players));
   if (homeCourtAdvantage) applyHomeBonus(aIsHome ? t1 : t2);
 
-  const game = new Game(t1, t2);
+  const game = new Game(t1, t2, injuriesEnabled);
   game.run();
 
   const winner = game.t1.score > game.t2.score ? teamA.abbr : teamB.abbr;
@@ -501,5 +556,6 @@ export function simulateGame(
     score: { [teamA.abbr]: game.t1.score, [teamB.abbr]: game.t2.score },
     boxScore: { [teamA.abbr]: game.snap(game.t1), [teamB.abbr]: game.snap(game.t2) },
     timeline: includeTimeline ? game.timeline : undefined,
+    injuryEvents: game.injuryEvents,
   };
 }

@@ -24,19 +24,34 @@ test('buildSchedule gives every team exactly gamesPerTeam games for odd and even
   }
 });
 
-test('injuries always have a real, non-zero assigned duration', () => {
+test('injuries follow nba-game-sim\'s real severity distribution (ported from season.html)', () => {
   const rng = createRng(42);
   const league = generateInitialLeague(defaultRules, rng);
   const { injuryReport } = playSeason(league, rng, { gamesPerTeam: 82, injuriesEnabled: true });
 
-  assert.ok(injuryReport.length > 0, 'an 82-game season with injuries enabled should produce some');
+  assert.ok(injuryReport.length > 100, 'an 82-game season should produce a large sample of injuries');
+
+  const counts = { Light: 0, Medium: 0, Severe: 0 };
+  let sawZeroGames = false;
   for (const r of injuryReport) {
-    assert.ok(r.outGames >= 1, `${r.label} injury should never be assigned 0 games out`);
+    assert.ok(['Light', 'Medium', 'Severe'].includes(r.label));
+    counts[r.label] += 1;
+    assert.ok(r.outGames >= 0);
+    // A "Light" injury (mean 2, stdev 5 games) can legitimately round to
+    // 0 — a scare that turns out fine, same as the original.
+    if (r.outGames === 0) sawZeroGames = true;
     // gamesRemaining (how much of the injury was still active when the
-    // season ended) can legitimately be 0 even for a long injury, if it
-    // happened early enough to fully heal before the season was over.
+    // season ended) can be 0 even for a long injury, if it happened
+    // early enough in the season to fully heal before it was over.
     assert.ok(r.gamesRemaining >= 0 && r.gamesRemaining <= r.outGames);
   }
+
+  // Ported odds: rollD(1000) <= 5 -> Severe (0.5%), <= 50 -> Medium (4.5%),
+  // else Light (95%). Loose tolerances since this is a live random sample.
+  const total = injuryReport.length;
+  assert.ok(counts.Light / total > 0.85, `Light should dominate: ${JSON.stringify(counts)}`);
+  assert.ok(counts.Severe / total < 0.05, `Severe should be rare: ${JSON.stringify(counts)}`);
+  assert.ok(sawZeroGames, 'at least one Light injury should round down to 0 games missed');
 });
 
 test('playSeason respects a custom gamesPerTeam and tracks per-player stats', () => {
