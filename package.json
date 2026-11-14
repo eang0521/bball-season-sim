@@ -1,0 +1,11 @@
+{
+  "name": "bball-season-sim",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Multi-season basketball simulator with customizable season-progression rules (aging, retirement, free agency, draft), built on top of nba-game-sim's game engine.",
+  "scripts": {
+    "demo": "node src/index.js",
+    "test": "node --test"
+  }
+}
