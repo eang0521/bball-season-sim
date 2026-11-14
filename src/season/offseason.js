@@ -36,7 +36,7 @@ function applyAgingAndContract(player, rules, rng) {
   return { ...aged, yearsLeft: player.yearsLeft - 1 };
 }
 
-export function runOffseason(league, rules, rng) {
+export function runOffseason(league, rules, rng, usedNames = new Set(league.players.map((p) => p.name))) {
   const payrollByTeam = sumByTeam(league.players, (p) => p.salary);
   const winsByTeam = new Map(league.teams.map((t) => [t.abbr, t.wins]));
 
@@ -57,7 +57,7 @@ export function runOffseason(league, rules, rng) {
   let nextId = Math.max(0, ...league.players.map((p) => p.id)) + 1;
   const rookies = [];
   for (let i = 0; i < retirees.length; i++) {
-    rookies.push(generateProspect(nextId++, rules, rng));
+    rookies.push(generateProspect(nextId++, rules, rng, usedNames));
   }
 
   const openings = [

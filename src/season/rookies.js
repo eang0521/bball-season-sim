@@ -11,10 +11,26 @@ import { FIRST_NAMES, LAST_NAMES } from '../../data/playerNames.js';
 // an unrelated last name — lands on common names more often than rare
 // ones, same as the spreadsheet's two independent VLOOKUP(RANDBETWEEN...)
 // draws into its full player list.
-export function randomName(rng) {
+function drawName(rng) {
   const first = FIRST_NAMES[randInt(rng, 0, FIRST_NAMES.length - 1)];
   const last = LAST_NAMES[randInt(rng, 0, LAST_NAMES.length - 1)];
   return `${first} ${last}`;
+}
+
+// With ~4,500 first and last names each drawn independently, the same
+// full name can come up for two different people (confirmed: it happens
+// within a handful of seasons in a 450-player league). `usedNames`, when
+// given, is checked and extended so every prospect's name is unique
+// across everyone who has ever been in this league — active or retired —
+// not just within one draft class.
+export function randomName(rng, usedNames) {
+  if (!usedNames) return drawName(rng);
+  let name = drawName(rng);
+  for (let attempt = 0; attempt < 1000 && usedNames.has(name); attempt++) {
+    name = drawName(rng);
+  }
+  usedNames.add(name);
+  return name;
 }
 
 function rollAmateurBaseline(rules, rng) {
@@ -44,10 +60,10 @@ function rollAmateurBaseline(rules, rng) {
   return { age, overall, potential, ratings };
 }
 
-export function generateProspect(id, rules, rng) {
+export function generateProspect(id, rules, rng, usedNames) {
   let player = {
     id,
-    name: randomName(rng),
+    name: randomName(rng, usedNames),
     team: null,
     ...rollAmateurBaseline(rules, rng),
   };

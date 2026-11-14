@@ -12,14 +12,15 @@ const seed = Number(process.argv[3] ?? Date.now());
 const gamesPerTeam = Number(process.argv[4] ?? 58);
 
 const rng = createRng(seed);
-let league = generateInitialLeague(defaultRules, rng);
+const usedNames = new Set();
+let league = generateInitialLeague(defaultRules, rng, undefined, usedNames);
 
 for (let year = 1; year <= seasons; year++) {
   const { standings } = playSeason(league, rng, { gamesPerTeam });
   standings.sort((a, b) => b.wins - a.wins);
   league = { teams: standings, players: league.players };
 
-  const { players, retirees, draftees } = runOffseason(league, defaultRules, rng);
+  const { players, retirees, draftees } = runOffseason(league, defaultRules, rng, usedNames);
   league = { teams: standings, players };
 
   console.log(`\n=== Season ${year} ===`);

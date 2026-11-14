@@ -24,6 +24,12 @@ let rng = null;
 let league = null;
 let season = 0;
 let rookieIds = new Set();
+// Every name anyone in this league has ever had (active or retired), so
+// a newly drafted rookie never ends up sharing a name with someone else
+// already in the league's history -- names are drawn from a large but
+// finite pool, so collisions are real without this (confirmed: it can
+// happen within a handful of seasons otherwise).
+let usedNames = new Set();
 
 // league.players is kept position-annotated at all times (see every
 // place `league =` is assigned below), so this just passes it through —
@@ -82,15 +88,17 @@ self.onmessage = (event) => {
     if (payload?.mode === 'real') {
       const real = generateRealLeague(defaultRules, rng);
       league = { teams: real.teams, players: withPositions(real.players) };
+      usedNames = new Set(real.players.map((p) => p.name));
       postReady();
       return;
     }
 
     self.postMessage({ type: 'bootstrapProgress', season: 0, total: BOOTSTRAP_SEASONS });
-    const rookieLeague = generateInitialLeague(defaultRules, rng);
+    usedNames = new Set();
+    const rookieLeague = generateInitialLeague(defaultRules, rng, undefined, usedNames);
     const matured = fastForwardSeasons(rookieLeague, defaultRules, rng, BOOTSTRAP_SEASONS, (done, total) => {
       self.postMessage({ type: 'bootstrapProgress', season: done, total });
-    });
+    }, 29, usedNames);
     league = { teams: matured.teams, players: withPositions(matured.players) };
     rookieIds = new Set(matured.lastDraftees.map((p) => p.id));
     postReady();
@@ -118,7 +126,7 @@ self.onmessage = (event) => {
     const playedRoster = rosterSummary(league.players);
 
     league = { teams: standings, players: league.players };
-    const { players, retirees, draftees } = runOffseason(league, defaultRules, rng);
+    const { players, retirees, draftees } = runOffseason(league, defaultRules, rng, usedNames);
     league = { teams: standings, players: withPositions(players) };
     rookieIds = new Set(draftees.map((p) => p.id));
     season += 1;
