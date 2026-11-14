@@ -390,10 +390,19 @@ function renderInjuries(report) {
 }
 
 // ── Players ─────────────────────────────────────────────────────────
+const EMPTY_STAT_LINE = { games: 0, ppg: 0, rpg: 0, apg: 0, spg: 0, bpg: 0, pmpg: 0, fgPct: 0, tpPct: 0 };
+
 function mergePlayers(snapshot) {
   const statsById = new Map(snapshot.allPlayerStats.map((s) => [s.id, s]));
-  const empty = { games: 0, ppg: 0, rpg: 0, apg: 0, spg: 0, bpg: 0, pmpg: 0, fgPct: 0, tpPct: 0 };
-  return snapshot.playedRoster.map((p) => ({ ...p, ...(statsById.get(p.id) ?? empty) }));
+  return snapshot.playedRoster.map((p) => ({ ...p, ...(statsById.get(p.id) ?? EMPTY_STAT_LINE) }));
+}
+
+// Before any season has been played this league, there's no stat line
+// yet, but the roster (ratings, position, contract) should still show —
+// so this falls back to the live roster with an all-zero stat line.
+function currentPlayersRows() {
+  if (viewingIndex >= 0) return mergePlayers(seasonHistory[viewingIndex]);
+  return latestRoster.map((p) => ({ ...p, ...EMPTY_STAT_LINE }));
 }
 
 const POSITION_ORDER = ['PG', 'G', 'SG', 'GF', 'SF', 'F', 'PF', 'FC', 'C'];
@@ -430,22 +439,22 @@ function renderPlayersTable(rows) {
   });
 }
 
-function renderPlayers(snapshot) {
+function renderPlayers() {
   document.getElementById('playersPlaceholder').hidden = true;
   document.getElementById('playersContent').hidden = false;
-  renderPlayersTable(mergePlayers(snapshot));
+  renderPlayersTable(currentPlayersRows());
 }
 
 document.querySelector('#playersTable thead').addEventListener('click', (e) => {
   const th = e.target.closest('th[data-key]');
-  if (!th || viewingIndex < 0) return;
+  if (!th) return;
   const key = th.dataset.key;
   if (playersSortKey === key) playersSortDir = playersSortDir === 'asc' ? 'desc' : 'asc';
   else {
     playersSortKey = key;
     playersSortDir = key === 'name' || key === 'team' ? 'asc' : 'desc';
   }
-  renderPlayersTable(mergePlayers(seasonHistory[viewingIndex]));
+  renderPlayersTable(currentPlayersRows());
 });
 
 // ── Roster ──────────────────────────────────────────────────────────
@@ -481,7 +490,7 @@ function renderSnapshot(snapshot) {
 
   renderPlayoffs(snapshot.postseason, snapshot.finalsMvp);
   renderInjuries(snapshot.injuryReport);
-  renderPlayers(snapshot);
+  renderPlayers();
   renderSeasonNav();
 }
 
@@ -537,6 +546,7 @@ function startWorker(seed, mode) {
       latestRoster = msg.roster;
       renderTeamOptions(msg.teams);
       renderRoster(teamSelect.value);
+      renderPlayers();
       setBusy(false, `League ready — ${msg.teams.length} teams.`);
       return;
     }
