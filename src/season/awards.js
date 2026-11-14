@@ -70,25 +70,38 @@ export function computeAwards(seasonStats, standings, players, rookieIds, gamesP
 export function computeFinalsMvp(finalsSeries, players) {
   if (!finalsSeries) return null;
   const nameToPlayer = new Map(players.map((p) => [`${p.team}|${p.name}`, p]));
-  const totals = new Map();
+  const totals = new Map(); // "team|name" -> { name, team, games, pts, reb, ast }
 
   for (const game of finalsSeries.games) {
     for (const [abbr, box] of Object.entries(game.boxScore)) {
       for (const line of box) {
+        if (line.sec <= 0) continue;
         const key = `${abbr}|${line.name}`;
-        const score = (totals.get(key)?.score ?? 0) + line.pts + 0.7 * line.reb + line.ast;
-        totals.set(key, { score, name: line.name, team: abbr });
+        const line_ = totals.get(key) ?? { name: line.name, team: abbr, games: 0, pts: 0, reb: 0, ast: 0 };
+        line_.games += 1;
+        line_.pts += line.pts;
+        line_.reb += line.reb;
+        line_.ast += line.ast;
+        totals.set(key, line_);
       }
     }
   }
 
   const championAbbr = finalsSeries.winner.abbr;
-  const candidates = [...totals.entries()]
-    .filter(([, v]) => v.team === championAbbr)
-    .sort((a, b) => b[1].score - a[1].score);
+  const candidates = [...totals.values()]
+    .filter((v) => v.team === championAbbr)
+    .sort((a, b) => (b.pts + 0.7 * b.reb + b.ast) - (a.pts + 0.7 * a.reb + a.ast));
 
   if (!candidates.length) return null;
-  const [key, value] = candidates[0];
-  const player = nameToPlayer.get(key);
-  return { id: player?.id, name: value.name, team: value.team };
+  const best = candidates[0];
+  const player = nameToPlayer.get(`${best.team}|${best.name}`);
+  return {
+    id: player?.id,
+    name: best.name,
+    team: best.team,
+    games: best.games,
+    ppg: best.games > 0 ? best.pts / best.games : 0,
+    rpg: best.games > 0 ? best.reb / best.games : 0,
+    apg: best.games > 0 ? best.ast / best.games : 0,
+  };
 }

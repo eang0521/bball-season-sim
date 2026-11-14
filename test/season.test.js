@@ -102,6 +102,8 @@ test('runPostseason produces a play-in, a full bracket, and a single champion', 
 
   const finalsMvp = computeFinalsMvp(postseason.finals, league.players);
   assert.ok(finalsMvp.name);
+  assert.ok(finalsMvp.games >= 1);
+  assert.ok(Number.isFinite(finalsMvp.ppg) && Number.isFinite(finalsMvp.rpg) && Number.isFinite(finalsMvp.apg));
 });
 
 test('computeAwards returns a full, non-overlapping set of categories', () => {

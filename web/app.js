@@ -239,41 +239,67 @@ function hideLeaders() {
 }
 
 // ── Awards ──────────────────────────────────────────────────────────
-function awardCard(title, player, extra = '') {
+// Stat lines match nba-game-sim's season.html award cards exactly:
+// offense-oriented awards show PPG/RPG/APG, DPOY shows SPG/BPG/RPG, and
+// All-NBA/All-Rookie list rows show PPG while All-Defensive rows show
+// SPG/BPG.
+function offLine(p) {
+  return `${p.ppg.toFixed(1)} PPG &middot; ${p.rpg.toFixed(1)} RPG &middot; ${p.apg.toFixed(1)} APG`;
+}
+function defLine(p) {
+  return `${p.spg.toFixed(1)} SPG &middot; ${p.bpg.toFixed(1)} BPG &middot; ${p.rpg.toFixed(1)} RPG`;
+}
+function ppgLine(p) {
+  return `${p.ppg.toFixed(1)} PPG`;
+}
+function sbLine(p) {
+  return `${p.spg.toFixed(1)} SPG &middot; ${p.bpg.toFixed(1)} BPG`;
+}
+
+function recordFor(team, standings) {
+  const t = standings?.find((row) => row.abbr === team);
+  return t ? `${t.wins}-${t.losses}` : '';
+}
+
+function awardCard(title, player, statLine, standings) {
   if (!player) return `<div class="award-card"><div class="award-title">${title}</div><div class="award-name">—</div></div>`;
+  const rec = recordFor(player.team, standings);
   return `<div class="award-card">
     <div class="award-title">${title}</div>
     <div class="award-name">${player.name}</div>
-    <div class="award-meta">${player.team}${extra ? ` &middot; ${extra}` : ''}</div>
+    <div class="award-meta">${player.team}${rec ? ` &middot; ${rec}` : ''}</div>
+    <div class="award-stat-line">${statLine ? statLine(player) : ''}</div>
   </div>`;
 }
 
-function teamList(title, players) {
-  return `<div><h3>${title}</h3><ol>${players.map((p) => `<li>${p.name} (${p.team})</li>`).join('') || '<li>None</li>'}</ol></div>`;
+function teamList(title, players, statLine) {
+  return `<div><h3>${title}</h3><ol>${
+    players.map((p) => `<li>${p.name} (${p.team}) &mdash; ${statLine(p)}</li>`).join('') || '<li>None</li>'
+  }</ol></div>`;
 }
 
-function renderAwards(awards, finalsMvp) {
+function renderAwards(awards, finalsMvp, standings) {
   document.getElementById('awardsPlaceholder').hidden = true;
   const el = document.getElementById('awardsContent');
   el.hidden = false;
   el.innerHTML = `
     <div class="award-cards">
-      ${awardCard('MVP', awards.mvp, awards.mvp ? `${awards.mvp.ppg.toFixed(1)} PPG` : '')}
-      ${awardCard('Defensive Player of the Year', awards.dpoy)}
-      ${awardCard('Rookie of the Year', awards.roy)}
-      ${awardCard('Sixth Man of the Year', awards.sixthManOfTheYear)}
-      ${awardCard('Finals MVP', finalsMvp)}
+      ${awardCard('MVP', awards.mvp, offLine, standings)}
+      ${awardCard('Defensive Player of the Year', awards.dpoy, defLine, standings)}
+      ${awardCard('Rookie of the Year', awards.roy, offLine, standings)}
+      ${awardCard('Sixth Man of the Year', awards.sixthManOfTheYear, offLine, standings)}
+      ${awardCard('Finals MVP', finalsMvp, offLine, standings)}
     </div>
     <div class="team-list-grid">
-      ${teamList('All-NBA First Team', awards.allNba.first)}
-      ${teamList('All-NBA Second Team', awards.allNba.second)}
-      ${teamList('All-NBA Third Team', awards.allNba.third)}
+      ${teamList('All-NBA First Team', awards.allNba.first, ppgLine)}
+      ${teamList('All-NBA Second Team', awards.allNba.second, ppgLine)}
+      ${teamList('All-NBA Third Team', awards.allNba.third, ppgLine)}
     </div>
     <div class="team-list-grid">
-      ${teamList('All-Defensive First Team', awards.allDefensive.first)}
-      ${teamList('All-Defensive Second Team', awards.allDefensive.second)}
-      ${teamList('All-Rookie First Team', awards.allRookie.first)}
-      ${teamList('All-Rookie Second Team', awards.allRookie.second)}
+      ${teamList('All-Defensive First Team', awards.allDefensive.first, sbLine)}
+      ${teamList('All-Defensive Second Team', awards.allDefensive.second, sbLine)}
+      ${teamList('All-Rookie First Team', awards.allRookie.first, ppgLine)}
+      ${teamList('All-Rookie Second Team', awards.allRookie.second, ppgLine)}
     </div>
   `;
 }
@@ -451,7 +477,7 @@ function renderSnapshot(snapshot) {
   if (latestSettings.showLeaders) renderLeaders(snapshot.leaders);
   else hideLeaders();
 
-  if (latestSettings.showAwards) renderAwards(snapshot.awards, snapshot.finalsMvp);
+  if (latestSettings.showAwards) renderAwards(snapshot.awards, snapshot.finalsMvp, snapshot.standings);
   else hideAwards();
 
   renderPlayoffs(snapshot.postseason, snapshot.finalsMvp);
