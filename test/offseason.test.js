@@ -55,6 +55,23 @@ test('draftees progress exactly like any other free agent landing on a team', ()
   }
 });
 
+test('draftees carry their draft-day potential separately from their matured first-season potential', () => {
+  const rng = createRng(21);
+  const league = generateInitialLeague(defaultRules, rng);
+
+  const result = runOffseason(league, defaultRules, rng);
+
+  assert.ok(result.draftees.length > 0);
+  for (const d of result.draftees) {
+    assert.ok(typeof d.draftPotential === 'number', `${d.name} should carry draftPotential`);
+  }
+  // The maturation step (applyAgingAndContract) almost always moves
+  // Potential by some nonzero amount, so across a whole draft class at
+  // least one should differ from the value they were ranked/drafted by.
+  const anyMoved = result.draftees.some((d) => d.draftPotential !== d.potential);
+  assert.ok(anyMoved, "maturation should move at least one draftee's potential away from draft day");
+});
+
 test('running several offseasons in a row stays stable', () => {
   const rng = createRng(99);
   let league = generateInitialLeague(defaultRules, rng);

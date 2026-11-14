@@ -117,7 +117,11 @@ function pct(wins, losses) {
 }
 
 function playerLine(p) {
-  return `<li>${p.name} <span style="color:#748ffc">(${p.team}, age ${p.age}, OVR ${p.overall}, POT ${p.potential})</span></li>`;
+  // Draftees carry draftPotential (their Potential on draft day, before
+  // the maturation step that ages them into their first season) — show
+  // that instead of the already-moved-on current `potential`.
+  const pot = p.draftPotential ?? p.potential;
+  return `<li>${p.name} <span style="color:#748ffc">(${p.team}, age ${p.age}, OVR ${p.overall}, POT ${pot})</span></li>`;
 }
 
 // ── Standings ───────────────────────────────────────────────────────

@@ -77,14 +77,19 @@ export function runOffseason(league, rules, rng) {
     yearsWithTeam: 1,
   }));
 
-  // Rookies are evaluated and assigned a team at their generated age
-  // (18-21, see rookies.js) via the exact same free-agent pool as any
-  // departing veteran, then age/develop/sign their first real contract
-  // exactly like any other free agent landing on a new team — so their
-  // first season is played a year older (19-22) than the age they were
-  // drafted at.
+  // Rookies are evaluated, ranked against the rest of the free-agent pool
+  // (matchFreeAgentsToTeams above runs on `rookies` as generated — i.e.
+  // their draft-evaluation Potential, before any of this), and assigned a
+  // team at their generated age (18-21, see rookies.js). Only after that
+  // do they age/develop/sign their first real contract exactly like any
+  // other free agent landing on a new team — so their first season is
+  // played a year older (19-22) than the age they were drafted at, and
+  // under a Potential that's already moved on from the one they were
+  // drafted/ranked by. `draftPotential` keeps that original value around
+  // for anyone who wants to show "how good this class looked on draft day".
   const newRookies = rookies.map((player) => ({
     ...applyAgingAndContract(player, rules, rng),
+    draftPotential: player.potential,
     team: assignments.get(player.id) ?? null,
     yearsWithTeam: 1,
     isRookieEntry: undefined,

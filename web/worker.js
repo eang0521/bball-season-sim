@@ -135,7 +135,10 @@ self.onmessage = (event) => {
       postseason,
       injuryReport,
       retirees: topBy(retirees, 'overall'),
-      draftees: topBy(draftees, 'potential'),
+      // Ranked by draftPotential (how good they looked on draft day),
+      // not the already-aged `potential` they enter their first season
+      // with.
+      draftees: topBy(draftees, 'draftPotential'),
       retireeCount: retirees.length,
       draftedCount: draftees.length,
       roster: rosterSummary(league.players),
