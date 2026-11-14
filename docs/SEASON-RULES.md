@@ -53,10 +53,16 @@ Every player carries:
    draft-eligible age (15–18) and then playing it forward through a few
    years of pre-draft development (the same aging/development formula from
    step 4, run a few times) — so draft classes already have some spread of
-   busts, sleepers, and sure things, the way real ones do.
+   busts, sleepers, and sure things, the way real ones do. They're
+   evaluated and assigned to a team at that drafted age (18–21), then
+   age, develop, and sign their first contract exactly like any other
+   free agent landing on a new team (step 4's aging formula, then step
+   6's contract step) — so a rookie's first season is played a year
+   older (19–22) than the age they were drafted at, under a real signed
+   deal rather than a placeholder.
 
 6. **Contracts.** Anyone whose contract just expired (including newly
-   signed free agents and rookies on their rookie-scale deal) gets a new
+   signed free agents and rookies on their first contract) gets a new
    salary pegged to whichever of Overall/Potential is lower, and a new
    1–5-year length. Everyone else just ticks their years-left down by one.
 

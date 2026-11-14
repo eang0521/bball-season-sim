@@ -58,6 +58,11 @@ export function generateProspect(id, rules, rng) {
 
   return {
     ...player,
+    // yearsLeft: 1 (an "expiring" deal) is what makes runOffseason treat
+    // this prospect as a free agent to be signed on their very first trip
+    // through applyAgingAndContract, same as any other free agent — the
+    // placeholder salary never surfaces, since that same pass signs them
+    // to a real contract before they're added to a roster.
     salary: rules.rookies.salaryPlaceholder,
     yearsLeft: rules.rookies.yearsLeftAtEntry,
     yearsWithTeam: 0,

@@ -37,6 +37,24 @@ test('retirement only fires once Overall has caught up to Potential', () => {
   }
 });
 
+test('draftees progress exactly like any other free agent landing on a team', () => {
+  const rng = createRng(3);
+  const league = generateInitialLeague(defaultRules, rng);
+
+  const result = runOffseason(league, defaultRules, rng);
+
+  assert.ok(result.draftees.length > 0);
+  for (const d of result.draftees) {
+    // Drafted at 18-21 (rookies.js), then aged/signed exactly like any
+    // other free agent via applyAgingAndContract -> first season played
+    // at 19-22, with a real signed contract instead of the $0 rookie
+    // placeholder (renewContract's minimum payout is 1, never 0).
+    assert.ok(d.age >= 19 && d.age <= 22, `drafted rookie age ${d.age} should be 19-22`);
+    assert.ok(d.salary >= 1, 'should have a real signed contract, not the $0 placeholder');
+    assert.ok(d.yearsLeft >= 1);
+  }
+});
+
 test('running several offseasons in a row stays stable', () => {
   const rng = createRng(99);
   let league = generateInitialLeague(defaultRules, rng);
