@@ -19,6 +19,11 @@
   <main>
     <section class="panel controls">
       <div class="control-row">
+        <label for="mode">League</label>
+        <select id="mode">
+          <option value="random">Random players</option>
+          <option value="real">Real NBA rosters</option>
+        </select>
         <label for="seed">Seed (optional)</label>
         <input id="seed" type="number" placeholder="random" />
         <button id="newLeagueBtn" class="btn primary">New League</button>
@@ -31,6 +36,8 @@
         engine. Each "Simulate Season" plays a full round-robin schedule, then runs the offseason
         (aging, retirement, free agency, draft) — see
         <a href="https://github.com/eang0521/bball-season-sim/blob/main/docs/SEASON-RULES.md" target="_blank" rel="noopener">SEASON-RULES.md</a>.
+        "Random players" generates fresh prospects and fast-forwards them through 10 simulated
+        seasons before showing you the resulting league, so it isn't 450 rookies on day one.
       </p>
     </section>
 

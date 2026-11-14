@@ -1,3 +1,4 @@
+const modeSelect = document.getElementById('mode');
 const seedInput = document.getElementById('seed');
 const newLeagueBtn = document.getElementById('newLeagueBtn');
 const simulateBtn = document.getElementById('simulateBtn');
@@ -83,14 +84,20 @@ function renderHistory() {
   historyPanel.hidden = history.length === 0;
 }
 
-function startWorker(seed) {
+function startWorker(seed, mode) {
   if (worker) worker.terminate();
   worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
   history = [];
-  setBusy(true, 'Generating league…');
+  seasonPanel.hidden = true;
+  setBusy(true, mode === 'real' ? 'Loading real rosters…' : 'Generating rookies…');
 
   worker.onmessage = (event) => {
     const msg = event.data;
+
+    if (msg.type === 'bootstrapProgress') {
+      setBusy(true, `Fast-forwarding league: season ${msg.season}/${msg.total}…`);
+      return;
+    }
 
     if (msg.type === 'ready') {
       latestRoster = msg.roster;
@@ -123,13 +130,13 @@ function startWorker(seed) {
     }
   };
 
-  worker.postMessage({ type: 'init', payload: { seed } });
+  worker.postMessage({ type: 'init', payload: { seed, mode } });
 }
 
 newLeagueBtn.addEventListener('click', () => {
   const raw = seedInput.value.trim();
   const seed = raw === '' ? undefined : Number(raw);
-  startWorker(seed);
+  startWorker(seed, modeSelect.value);
 });
 
 simulateBtn.addEventListener('click', () => {
@@ -141,4 +148,4 @@ simulateBtn.addEventListener('click', () => {
 teamSelect.addEventListener('change', () => renderRoster(teamSelect.value));
 
 // Auto-start a league on load so the page isn't empty.
-startWorker();
+startWorker(undefined, modeSelect.value);

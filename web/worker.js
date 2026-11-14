@@ -2,9 +2,12 @@
 // possession engine (~800+ games per season) never freezes the page.
 import { createRng } from '../src/season/rng.js';
 import { defaultRules } from '../src/season/config.js';
-import { generateInitialLeague } from '../src/season/league.js';
+import { generateInitialLeague, fastForwardSeasons } from '../src/season/league.js';
+import { generateRealLeague } from '../src/season/realLeague.js';
 import { playSeason } from '../src/season/season.js';
 import { runOffseason } from '../src/season/offseason.js';
+
+const BOOTSTRAP_SEASONS = 10;
 
 let rng = null;
 let league = null;
@@ -30,19 +33,34 @@ function topBy(players, key, n = 5) {
   return [...players].sort((a, b) => b[key] - a[key]).slice(0, n);
 }
 
+function postReady() {
+  self.postMessage({
+    type: 'ready',
+    season,
+    teams: league.teams.map((t) => t.abbr),
+    roster: rosterSummary(league.players),
+  });
+}
+
 self.onmessage = (event) => {
   const { type, payload } = event.data;
 
   if (type === 'init') {
     rng = createRng(payload?.seed ?? Date.now());
-    league = generateInitialLeague(defaultRules, rng);
     season = 0;
-    self.postMessage({
-      type: 'ready',
-      season,
-      teams: league.teams.map((t) => t.abbr),
-      roster: rosterSummary(league.players),
+
+    if (payload?.mode === 'real') {
+      league = generateRealLeague(defaultRules, rng);
+      postReady();
+      return;
+    }
+
+    self.postMessage({ type: 'bootstrapProgress', season: 0, total: BOOTSTRAP_SEASONS });
+    const rookieLeague = generateInitialLeague(defaultRules, rng);
+    league = fastForwardSeasons(rookieLeague, defaultRules, rng, BOOTSTRAP_SEASONS, (done, total) => {
+      self.postMessage({ type: 'bootstrapProgress', season: done, total });
     });
+    postReady();
     return;
   }
 
