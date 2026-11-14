@@ -51,6 +51,24 @@ export function splitFour(rng, total) {
   return [a, b, c, d];
 }
 
+// Standard normal sample (Box-Muller), scaled by `stdev`.
+export function gaussian(rng, stdev = 1) {
+  const u1 = Math.max(rng(), Number.EPSILON);
+  const u2 = rng();
+  const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  return z * stdev;
+}
+
+// Fisher-Yates shuffle (doesn't mutate the input).
+export function shuffle(rng, items) {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 // Picks exactly k of n "slots" uniformly at random, as a 0/1 flag array.
 // Mirrors the R2/S2/T2/U2 bonus-die flags on the Ref sheet, where k is the
 // number of bonus dice an amateur prospect gets and n is the 4 rating

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>bball-season-sim</title>
-  <meta name="description" content="Multi-season basketball simulator: possession-by-possession games, aging, retirement, free agency, and the draft." />
+  <meta name="description" content="Multi-season basketball simulator: possession-by-possession games, standings, playoffs, awards, and a customizable season-progression system." />
   <link rel="stylesheet" href="./web/styles.css" />
 </head>
 <body>
@@ -33,32 +33,86 @@
       <p class="hint">
         Games are played possession-by-possession by the real
         <a href="https://github.com/eang0521/nba-game-sim" target="_blank" rel="noopener">nba-game-sim</a>
-        engine. Each "Simulate Season" plays a full round-robin schedule, then runs the offseason
-        (aging, retirement, free agency, draft) — see
-        <a href="https://github.com/eang0521/bball-season-sim/blob/main/docs/SEASON-RULES.md" target="_blank" rel="noopener">SEASON-RULES.md</a>.
-        "Random players" generates fresh prospects and fast-forwards them through 10 simulated
-        seasons before showing you the resulting league, so it isn't 450 rookies on day one.
+        engine. "Random players" generates fresh prospects and fast-forwards them through 10 simulated
+        seasons before showing you the resulting league. See
+        <a href="https://github.com/eang0521/bball-season-sim/blob/main/docs/SEASON-RULES.md" target="_blank" rel="noopener">SEASON-RULES.md</a>
+        for the progression rules, and the Settings tab for games-per-season and other options.
       </p>
     </section>
 
-    <section class="panel" id="seasonPanel" hidden>
-      <h2 id="seasonTitle">Season 1</h2>
-      <div class="grid">
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="standings">Standings</button>
+      <button class="tab" data-tab="leaders">Leaders</button>
+      <button class="tab" data-tab="awards">Awards</button>
+      <button class="tab" data-tab="playoffs">Playoffs</button>
+      <button class="tab" data-tab="injuries">Injuries</button>
+      <button class="tab" data-tab="roster">Roster</button>
+      <button class="tab" data-tab="settings">Settings</button>
+    </nav>
+
+    <!-- ── Standings ──────────────────────────────────────────── -->
+    <section class="panel tab-panel active" id="tab-standings">
+      <h2>Standings</h2>
+      <p class="placeholder" id="standingsPlaceholder">Simulate a season to see standings here.</p>
+      <div class="grid conf-grid" id="standingsGrid" hidden>
         <div>
-          <h3>Standings</h3>
-          <table class="standings">
-            <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th></tr></thead>
-            <tbody id="standingsBody"></tbody>
-          </table>
+          <h3>Eastern Conference</h3>
+          <table class="standings"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th></tr></thead><tbody id="eastBody"></tbody></table>
         </div>
+        <div>
+          <h3>Western Conference</h3>
+          <table class="standings"><thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th><th>PCT</th></tr></thead><tbody id="westBody"></tbody></table>
+        </div>
+      </div>
+      <p class="legend" id="standingsLegend" hidden><span class="dot playoff"></span> clinches a playoff spot &nbsp; <span class="dot playin"></span> play-in tournament</p>
+      <div class="grid" id="standingsFooter" hidden style="margin-top:1.25rem">
         <div>
           <h3>Offseason Summary</h3>
           <div id="offseasonSummary" class="summary"></div>
         </div>
+        <div>
+          <h3>Season History</h3>
+          <ol id="historyList" class="history"></ol>
+        </div>
       </div>
     </section>
 
-    <section class="panel" id="rosterPanel" hidden>
+    <!-- ── Leaders ────────────────────────────────────────────── -->
+    <section class="panel tab-panel" id="tab-leaders">
+      <h2>Statistical Leaders</h2>
+      <p class="placeholder" id="leadersPlaceholder">Simulate a season to see league leaders here.</p>
+      <div id="leadersContent" hidden>
+        <div class="control-row" id="leaderTabs"></div>
+        <table class="standings"><thead><tr><th>#</th><th>Player</th><th>Team</th><th id="leaderValueHeader">Value</th></tr></thead><tbody id="leaderBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- ── Awards ─────────────────────────────────────────────── -->
+    <section class="panel tab-panel" id="tab-awards">
+      <h2>Season Awards</h2>
+      <p class="placeholder" id="awardsPlaceholder">Simulate a season to see awards here.</p>
+      <div id="awardsContent" hidden></div>
+    </section>
+
+    <!-- ── Playoffs ───────────────────────────────────────────── -->
+    <section class="panel tab-panel" id="tab-playoffs">
+      <h2>Postseason</h2>
+      <p class="placeholder" id="playoffsPlaceholder">Simulate a season to see the play-in and playoffs here.</p>
+      <div id="playoffsContent" hidden></div>
+    </section>
+
+    <!-- ── Injuries ───────────────────────────────────────────── -->
+    <section class="panel tab-panel" id="tab-injuries">
+      <h2>Injury Report</h2>
+      <p class="placeholder" id="injuriesPlaceholder">Enable Injuries in Settings and simulate a season to see this.</p>
+      <table class="standings" id="injuriesTable" hidden>
+        <thead><tr><th>Player</th><th>Team</th><th>Severity</th><th>Games Remaining</th></tr></thead>
+        <tbody id="injuriesBody"></tbody>
+      </table>
+    </section>
+
+    <!-- ── Roster ─────────────────────────────────────────────── -->
+    <section class="panel tab-panel" id="tab-roster">
       <h2>Team Roster</h2>
       <div class="control-row">
         <label for="teamSelect">Team</label>
@@ -72,11 +126,85 @@
       </table>
     </section>
 
-    <section class="panel" id="historyPanel" hidden>
-      <h2>Season History</h2>
-      <ol id="historyList" class="history"></ol>
+    <!-- ── Settings ───────────────────────────────────────────── -->
+    <section class="panel tab-panel" id="tab-settings">
+      <h2>Settings</h2>
+      <p class="hint" style="margin-top:0">Changes apply the next time you simulate a season.</p>
+
+      <div class="setting-card">
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label">Games per Season</div>
+            <div class="setting-desc">How many games each team plays. 82 matches a real NBA season; lower it to simulate seasons faster.</div>
+          </div>
+          <input id="gamesPerTeam" type="number" min="1" max="200" value="58" />
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label">Home Court Advantage</div>
+            <div class="setting-desc">The home team gets +1 to all four ratings for that game.</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="homeCourtAdvantage" checked /><span class="toggle-track"></span></label>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label">Rating Uncertainty</div>
+            <div class="setting-desc">Apply independent random noise (std dev below) to every player's ratings at the start of each season.</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="ratingUncertainty" /><span class="toggle-track"></span></label>
+        </div>
+        <div class="setting-row sub-setting" id="stdevRow" style="display:none">
+          <div class="setting-text">
+            <div class="setting-label">Noise Std Dev</div>
+            <div class="setting-desc">Rating points of variance per stat per player.</div>
+          </div>
+          <div class="stdev-control">
+            <input type="range" id="uncertaintyStdev" min="1" max="10" step="1" value="3" />
+            <span class="stdev-badge" id="stdevVal">3</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label">Injuries</div>
+            <div class="setting-desc">Each game carries a chance of an injury; injured players sit out a random number of future games.</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="injuriesEnabled" /><span class="toggle-track"></span></label>
+        </div>
+      </div>
+
+      <div class="setting-card">
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label">Show Statistical Leaders</div>
+            <div class="setting-desc">Show the Leaders tab's content after simulating a season.</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showLeaders" checked /><span class="toggle-track"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-text">
+            <div class="setting-label">Show Season Awards</div>
+            <div class="setting-desc">Show the Awards tab's content after simulating a season.</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showAwards" checked /><span class="toggle-track"></span></label>
+        </div>
+      </div>
+
+      <div class="reset-row">
+        <button class="btn-reset" id="resetSettingsBtn">Reset to Defaults</button>
+      </div>
     </section>
   </main>
+
+  <div class="saved-toast" id="toast">Settings saved</div>
 
   <script type="module" src="./web/app.js"></script>
 </body>

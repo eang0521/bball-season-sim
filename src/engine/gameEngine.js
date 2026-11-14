@@ -469,11 +469,16 @@ function toEngineRoster(players) {
   }));
 }
 
-export function simulateGame(teamA, teamB, rng, { includeTimeline = false } = {}) {
-  const aIsHome = rng ? rng() < 0.5 : Math.random() < 0.5;
+export function simulateGame(
+  teamA,
+  teamB,
+  rng,
+  { includeTimeline = false, homeCourtAdvantage = true, forceHome = null } = {},
+) {
+  const aIsHome = forceHome ? forceHome === 'A' : rng ? rng() < 0.5 : Math.random() < 0.5;
   const t1 = new Team(teamA.abbr, toEngineRoster(teamA.players));
   const t2 = new Team(teamB.abbr, toEngineRoster(teamB.players));
-  applyHomeBonus(aIsHome ? t1 : t2);
+  if (homeCourtAdvantage) applyHomeBonus(aIsHome ? t1 : t2);
 
   const game = new Game(t1, t2);
   game.run();

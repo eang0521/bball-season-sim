@@ -12,7 +12,7 @@ test('fast-forwarding a rookie-only league keeps its size and ages the roster', 
   const startingAvgAge =
     rookieLeague.players.reduce((sum, p) => sum + p.age, 0) / expectedSize;
 
-  const matured = fastForwardSeasons(rookieLeague, defaultRules, rng, 3, undefined, 1);
+  const matured = fastForwardSeasons(rookieLeague, defaultRules, rng, 3, undefined, 10);
 
   assert.equal(matured.players.length, expectedSize);
   assert.ok(matured.teams.every((t) => t.wins === 41), 'records reset to a neutral baseline');
@@ -27,7 +27,7 @@ test('fast-forwarding reports progress once per season', () => {
 
   fastForwardSeasons(rookieLeague, defaultRules, rng, 4, (season, total) => {
     ticks.push([season, total]);
-  }, 1);
+  }, 10);
 
   assert.deepEqual(ticks, [[1, 4], [2, 4], [3, 4], [4, 4]]);
 });

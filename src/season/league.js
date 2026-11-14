@@ -28,27 +28,32 @@ export function generateInitialLeague(rules, rng, teams = TEAM_ABBREVIATIONS) {
 
 // Plays `seasons` full schedule-plus-offseason cycles so a freshly
 // generated rookie-only league ages into a realistic mix of rookies,
-// veterans, and stars before anyone actually sees it. `gamesPerOpponent`
-// is kept low by default since only the roster outcome matters here, not
+// veterans, and stars before anyone actually sees it. `gamesPerTeam` is
+// kept low by default since only the roster outcome matters here, not
 // the standings along the way. `onProgress(season, totalSeasons)` fires
 // after each completed cycle.
-export function fastForwardSeasons(league, rules, rng, seasons, onProgress, gamesPerOpponent = 1) {
+export function fastForwardSeasons(league, rules, rng, seasons, onProgress, gamesPerTeam = 29) {
   let current = league;
+  let lastDraftees = [];
 
   for (let i = 0; i < seasons; i++) {
-    const standings = playSeason(current, rng, gamesPerOpponent).sort((a, b) => b.wins - a.wins);
+    const { standings } = playSeason(current, rng, { gamesPerTeam, injuriesEnabled: false });
+    standings.sort((a, b) => b.wins - a.wins);
     current = { teams: standings, players: current.players };
 
-    const { players } = runOffseason(current, rules, rng);
+    const { players, draftees } = runOffseason(current, rules, rng);
     current = { teams: standings, players };
+    lastDraftees = draftees;
 
     onProgress?.(i + 1, seasons);
   }
 
   // Hand back opening-day records, not whatever the last fast-forwarded
-  // season happened to finish with.
+  // season happened to finish with. The last offseason's draftees are
+  // still rookies going into the first season anyone actually sees.
   return {
     teams: current.teams.map((t) => ({ abbr: t.abbr, wins: 41 })),
     players: current.players,
+    lastDraftees,
   };
 }

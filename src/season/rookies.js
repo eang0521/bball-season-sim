@@ -4,16 +4,13 @@
 // some of the spread real draft classes have, instead of being blank slates.
 import { randInt, rollDice, chooseKOfN } from './rng.js';
 import { advanceOnePeriod } from './progression.js';
+import { FIRST_NAMES, LAST_NAMES } from '../../data/playerNames.js';
 
-const FIRST_NAMES = [
-  'Jalen', 'Marcus', 'Trey', 'Devon', 'Isaiah', 'Cole', 'Malik', 'Andre',
-  'Tyrese', 'Caleb', 'Darius', 'Austin', 'Elijah', 'Bryce', 'Keon', 'Rico',
-];
-const LAST_NAMES = [
-  'Carter', 'Mitchell', 'Reed', 'Hawkins', 'Price', 'Sanders', 'Bishop',
-  'Walton', 'Franklin', 'Osei', 'Nakamura', 'Delgado', 'Winters', 'Boateng',
-];
-
+// Each array holds one entry per historical NBA player (duplicates kept on
+// purpose), so an independent uniform draw from each — a first name, then
+// an unrelated last name — lands on common names more often than rare
+// ones, same as the spreadsheet's two independent VLOOKUP(RANDBETWEEN...)
+// draws into its full player list.
 export function randomName(rng) {
   const first = FIRST_NAMES[randInt(rng, 0, FIRST_NAMES.length - 1)];
   const last = LAST_NAMES[randInt(rng, 0, LAST_NAMES.length - 1)];
