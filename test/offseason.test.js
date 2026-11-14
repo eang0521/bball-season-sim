@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createRng } from '../src/season/rng.js';
 import { defaultRules } from '../src/season/config.js';
 import { generateInitialLeague } from '../src/season/league.js';
+import { generateRealLeague } from '../src/season/realLeague.js';
 import { runOffseason } from '../src/season/offseason.js';
 
 test('offseason keeps league size constant', () => {
@@ -29,12 +30,30 @@ test('retirees are dropped and everyone else ages or enters fresh', () => {
   }
 });
 
-test('retirement only fires once Overall has caught up to Potential', () => {
-  const rng = createRng(1);
-  for (const retiree of [{ overall: 50, potential: 70 }]) {
-    // Overall below Potential should never retire regardless of roll.
-    assert.ok(!(retiree.overall > retiree.potential));
+test('every retiree, across many seeds/offseasons/league types, has Overall > Potential', () => {
+  // Rule: a player retires only if (a) a 1d6*10 roll beats their Overall
+  // AND (b) their Overall has already caught up to (or passed) their
+  // Potential -- checked BEFORE free agency, on their pre-offseason
+  // stat line. This runs a real stress test rather than asserting the
+  // rule in the abstract, since that's what actually catches a
+  // regression here.
+  let totalRetirees = 0;
+  for (let seed = 1; seed <= 20; seed++) {
+    const rng = createRng(seed);
+    let league = seed % 2 === 0 ? generateInitialLeague(defaultRules, rng) : generateRealLeague(defaultRules, rng);
+    for (let i = 0; i < 6; i++) {
+      const result = runOffseason(league, defaultRules, rng);
+      for (const r of result.retirees) {
+        totalRetirees += 1;
+        assert.ok(
+          r.overall > r.potential,
+          `${r.name} retired with OVR ${r.overall} <= POT ${r.potential} (seed ${seed}, offseason ${i})`,
+        );
+      }
+      league = { teams: league.teams, players: result.players };
+    }
   }
+  assert.ok(totalRetirees > 500, 'should have accumulated a meaningful sample of retirees');
 });
 
 test('draftees progress exactly like any other free agent landing on a team', () => {
