@@ -116,11 +116,7 @@ function pct(wins, losses) {
   return total > 0 ? (wins / total).toFixed(3).replace(/^0/, '') : '.000';
 }
 
-function playerLine(p) {
-  // Draftees carry draftPotential (their Potential on draft day, before
-  // the maturation step that ages them into their first season) — show
-  // that instead of the already-moved-on current `potential`.
-  const pot = p.draftPotential ?? p.potential;
+function playerLine(p, pot = p.potential) {
   return `<li>${p.name} <span style="color:#748ffc">(${p.team}, age ${p.age}, OVR ${p.overall}, POT ${pot})</span></li>`;
 }
 
@@ -150,9 +146,9 @@ function renderOffseasonSummary({ retireeCount, draftedCount, retirees, draftees
   document.getElementById('offseasonSummary').innerHTML = `
     <p>${retireeCount} retirements &rarr; ${draftedCount} rookies drafted.</p>
     <h4>Notable retirements</h4>
-    <ul>${retirees.map(playerLine).join('') || '<li>None</li>'}</ul>
+    <ul>${retirees.map((p) => playerLine(p)).join('') || '<li>None</li>'}</ul>
     <h4>Top draftees (by potential)</h4>
-    <ul>${draftees.map(playerLine).join('') || '<li>None</li>'}</ul>
+    <ul>${draftees.map((p) => playerLine(p, p.draftPotential ?? p.potential)).join('') || '<li>None</li>'}</ul>
   `;
 }
 
