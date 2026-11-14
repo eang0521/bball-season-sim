@@ -135,9 +135,17 @@ export class Game {
       team.court = [];
       team.players.forEach((p) => { p.on_court = false; });
       for (let s = 0; s < 5; s++) {
-        const bench = [...team.players]
+        let bench = [...team.players]
           .filter((p) => !p.on_court && !p.fouled_out)
           .sort((a, b) => b.ovr - a.ovr);
+        // A team can't take the court with fewer than 5 — if fouls have
+        // exhausted everyone else (rare, but reachable over enough
+        // simulated games), the least-disqualified player has to play on.
+        if (!bench.length) {
+          bench = [...team.players]
+            .filter((p) => !p.on_court)
+            .sort((a, b) => a.fouls - b.fouls || b.ovr - a.ovr);
+        }
         if (!bench.length) break;
         const r = rollD(20);
         const idx = r <= 6 ? 0

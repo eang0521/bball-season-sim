@@ -327,6 +327,11 @@ function startWorker(seed, mode) {
   renderHistory();
   setBusy(true, mode === 'real' ? 'Loading real rosters…' : 'Generating rookies…');
 
+  worker.onerror = (event) => {
+    console.error('Worker error:', event.message, event);
+    setBusy(false, `Error: ${event.message || 'something went wrong in the simulation.'}`);
+  };
+
   worker.onmessage = (event) => {
     const msg = event.data;
 
