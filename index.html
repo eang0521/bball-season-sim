@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>bball-season-sim</title>
+  <meta name="description" content="Multi-season basketball simulator: possession-by-possession games, aging, retirement, free agency, and the draft." />
+  <link rel="stylesheet" href="./web/styles.css" />
+</head>
+<body>
+  <header>
+    <div class="header-brand">
+      <h1>bball-season-sim</h1>
+      <span class="badge">Multi-Season Sim</span>
+    </div>
+    <a class="nav-link" href="https://github.com/eang0521/bball-season-sim" target="_blank" rel="noopener">GitHub</a>
+  </header>
+
+  <main>
+    <section class="panel controls">
+      <div class="control-row">
+        <label for="seed">Seed (optional)</label>
+        <input id="seed" type="number" placeholder="random" />
+        <button id="newLeagueBtn" class="btn primary">New League</button>
+        <button id="simulateBtn" class="btn" disabled>Simulate Season</button>
+        <span id="status" class="status"></span>
+      </div>
+      <p class="hint">
+        Games are played possession-by-possession by the real
+        <a href="https://github.com/eang0521/nba-game-sim" target="_blank" rel="noopener">nba-game-sim</a>
+        engine. Each "Simulate Season" plays a full round-robin schedule, then runs the offseason
+        (aging, retirement, free agency, draft) — see
+        <a href="https://github.com/eang0521/bball-season-sim/blob/main/docs/SEASON-RULES.md" target="_blank" rel="noopener">SEASON-RULES.md</a>.
+      </p>
+    </section>
+
+    <section class="panel" id="seasonPanel" hidden>
+      <h2 id="seasonTitle">Season 1</h2>
+      <div class="grid">
+        <div>
+          <h3>Standings</h3>
+          <table class="standings">
+            <thead><tr><th>#</th><th>Team</th><th>W</th><th>L</th></tr></thead>
+            <tbody id="standingsBody"></tbody>
+          </table>
+        </div>
+        <div>
+          <h3>Offseason Summary</h3>
+          <div id="offseasonSummary" class="summary"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="rosterPanel" hidden>
+      <h2>Team Roster</h2>
+      <div class="control-row">
+        <label for="teamSelect">Team</label>
+        <select id="teamSelect"></select>
+      </div>
+      <table class="roster">
+        <thead>
+          <tr><th>Player</th><th>Age</th><th>2PT</th><th>3PT</th><th>DEF</th><th>REB</th><th>OVR</th><th>POT</th><th>$</th><th>Yrs</th></tr>
+        </thead>
+        <tbody id="rosterBody"></tbody>
+      </table>
+    </section>
+
+    <section class="panel" id="historyPanel" hidden>
+      <h2>Season History</h2>
+      <ol id="historyList" class="history"></ol>
+    </section>
+  </main>
+
+  <script type="module" src="./web/app.js"></script>
+</body>
+</html>
